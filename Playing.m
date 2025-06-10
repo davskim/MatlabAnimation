@@ -146,30 +146,61 @@ end
 % Oh! What about predetermining the path of every tween FIRST! And then
 % staggering them? After that, we can just loop through the new data and
 % animate!
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+xlim([0,3])
+ylim([-3,3])
+
+while 1
+    Cascadefunctween(ax,[x,y],[x,3*y]);
+    Cascadefunctween(ax,[x,3*y],[x,y]);
+end
+
 
 
 function Cascadefunctween(ax,startfunc,endfunc)
     frames = 100;
     c = 5;
-    
-
     xdist = endfunc(:,1)-startfunc(:,1);
     ydist = endfunc(:,2)-startfunc(:,2);
-    ax.XData = startfunc(:,1);
-    ax.YData = startfunc(:,2);
-    for j = 1:size(startfunc,1)
-        for i = 1:frames
-            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); %should go from 0-1
-
-            logicVec = zeros(size(startfunc,1),1);
-            logicVec(j) = 1;
-            set(ax,'XData',startfunc(:,1)+dist*xdist.*logicVec,'YData',startfunc(:,2)+dist*ydist.*logicVec)
-            drawnow
-        end
-        startfunc(:,1) = ax.XData';
-        startfunc(:,2) = ax.YData';
+    predestX = zeros(frames,length(startfunc)); %predetermining every point's movement
+    predestY = zeros(frames,length(startfunc));
+    for i = 1:frames
+        dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+        predestX(i,:) = startfunc(:,1)+dist*xdist;
+        predestY(i,:) = startfunc(:,2)+dist*ydist;
+        %set(ax,'XData',startfunc(:,1)+dist*xdist,'YData',startfunc(:,2)+dist*ydist)
+    end
+    
+    stagX = stagger_matrix(predestX);
+    stagY = stagger_matrix(predestY);
+    for i = 1:size(stagX,1)
+        set(ax,'XData',stagX(i,:),'YData',stagY(i,:))
+        drawnow
     end
 end
+
+% This is a function that would stagger a matrix... it's for cascading...
+% Cards on the table, I asked chatgpt to make this...
+function B = stagger_matrix(A)
+    [N, M] = size(A);
+    L = N + M - 1; % new length of staggered mat. I gotta change this if I'm gonna run this again...
+    B = zeros(L, M);
+
+    for col = 1:M
+        idx = col;    % The diagonal position
+        B(idx:N+idx-1, col) = A(:,col);
+        if col ~= 1
+            B(1:idx,col) = A(1,col);
+        end
+        if col ~= M
+            B(idx+N:end,col) = A(end,col);
+        end
+    end
+end
+
 
 
 % I need to start off with tweening between two functions of the same
