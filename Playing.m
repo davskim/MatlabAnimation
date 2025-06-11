@@ -200,6 +200,35 @@ while 1
     panCam(ax,[0,3;-3,3])
 end
 
+%% Transforming contiguous SVGs
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+hold on;
+ax2 = plot(x,sin(10*x),'o');
+ax3 = plot(x,x*1.2,'o');
+xlim([0,3])
+ylim([-3,3])
+svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\test.svg',.99,0);
+svg = interpolateCurve(svg{1,1},length(x));
+% Let's normalize to a -3,3 grid... Wait... I can just zscore conveniently
+% LMFAOOOOO THAT WORKED HOLY SHIT
+svg = zscore(svg,0,1)
+
+
+axcell = {ax,ax2,ax3};
+while 1
+    MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
+    panCam(ax,[-3,3;-3,3])
+    MultiCascade(axcell,{[cos(linspace(0,2*pi,300)')*2,sin(linspace(0,2*pi,300)')*2], ...
+        [cos(linspace(0,2*pi,300)')*.5,sin(linspace(0,2*pi,300)')*.5], ...
+        [cos(linspace(0,2*pi,300)'),sin(linspace(0,2*pi,300)')]})
+    MultiCascade(axcell,{svg,1.5*svg,2*svg})
+    panCam(ax,[0,3;-3,3])
+    MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
+end
+
 
 
 % how in the hell do I do this? Multithreading? Nah... Probably not. I
@@ -296,10 +325,26 @@ function Cascadefunctween(ax,startfunc,endfunc)
     end
 end
 
-
+%Another chatGpt generation... I don't know how to make a clever
+%interpolation function like this... I hope it'll work...
+%goddamn... It worked... I'm impressed...
+function [newfunc] = interpolateCurve(xy, Nnew)
+    %xy = [x(:), y(:)];
+    x = xy(:,1);
+    y = xy(:,2);
+    dxy = diff(xy);
+    segment_lengths = sqrt(sum(dxy.^2,2));
+    cumlen = [0; cumsum(segment_lengths)];
+    totalLength = cumlen(end);
+    tnew = linspace(0, totalLength, Nnew);
+    xnew = interp1(cumlen, x(:), tnew)';
+    ynew = interp1(cumlen, y(:), tnew)';
+    newfunc = [xnew,ynew];
+end
 
 % This is a function that would stagger a matrix... it's for cascading...
 % Cards on the table, I asked chatgpt to make this...
+% Okay, not anymore... it's modded from chatgpt lol
 function B = stagger_matrix(A)
     [N, M] = size(A);
     L = N + M - 1; % new length of staggered mat. I gotta change this if I'm gonna run this again...
