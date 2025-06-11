@@ -156,12 +156,193 @@ ylim([-3,3])
 while 1
     Cascadefunctween(ax,[x,y],[x,3*y]);
     Cascadefunctween(ax,[x,3*y],[x,y]);
-    pancam(ax,[0,-3;0,9])
+    panCam(ax,[0,3;0,9]);
     Cascadefunctween(ax,[x,3*x]);
+    panCam(ax,[0,3;-3,3])
+    Cascadefunctween(ax,[x,y]);
+end
+
+%% Okay, now how about we augment the Cascade functween to have multiple plots?
+% how in the hell do I do this? Multithreading? Nah... Probably not. I
+% don't want it to get that complicated... I'll start with something
+% simple... I'll pass in two ax objects in a cell... I'll pass in the same
+% thing with the startfunc and endfunc variables... a 2x1 cell that have
+% two columns each...
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+hold on;
+ax2 = plot(x,sin(10*x),'o');
+xlim([0,3])
+ylim([-3,3])
+
+MultiCascade({ax,ax2},{[x,1.5*y],[x,3*y]});
+
+%% HOLY SHIT that worked. Let's see if this works with everything...
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+hold on;
+ax2 = plot(x,sin(10*x),'o');
+ax3 = plot(x,x*1.2,'o');
+xlim([0,3])
+ylim([-3,3])
+
+axcell = {ax,ax2,ax3};
+while 1
+    MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
+    panCam(ax,[-3,3;-3,3])
+    MultiCascade(axcell,{[cos(linspace(0,2*pi,300)')*2,sin(linspace(0,2*pi,300)')*2], ...
+        [cos(linspace(0,2*pi,300)')*.5,sin(linspace(0,2*pi,300)')*.5], ...
+        [cos(linspace(0,2*pi,300)'),sin(linspace(0,2*pi,300)')]})
+    panCam(ax,[0,3;-3,3])
+end
+
+%% Transforming contiguous SVGs
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+hold on;
+ax2 = plot(x,sin(10*x),'o');
+ax3 = plot(x,x*1.2,'o');
+xlim([0,3])
+ylim([-3,3])
+svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\MatlabAnimation\test.svg',.99,0);
+svg = interpolateCurve(svg{1,1},length(x));
+% Let's normalize to a -3,3 grid... Wait... I can just zscore conveniently
+% LMFAOOOOO THAT WORKED HOLY SHIT
+svg = zscore(svg,0,1)
+
+
+axcell = {ax,ax2,ax3};
+while 1
+    MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
+    panCam(ax,[-3,3;-3,3])
+    MultiCascade(axcell,{[cos(linspace(0,2*pi,300)')*2,sin(linspace(0,2*pi,300)')*2], ...
+        [cos(linspace(0,2*pi,300)')*.5,sin(linspace(0,2*pi,300)')*.5], ...
+        [cos(linspace(0,2*pi,300)'),sin(linspace(0,2*pi,300)')]})
+    MultiCascade(axcell,{svg,1.5*svg,2*svg})
+    panCam(ax,[0,3;-3,3])
+    MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
+end
+
+%% Testing with previous functions
+figure;
+x = linspace(-3,3,300);
+y = sin(5*x);
+ax = plot(x,y,'o');
+xlim([-3,3])
+ylim([-3,3])
+svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\MatlabAnimation\test.svg',.99,0);
+svg = interpolateCurve(svg{1,1},length(x));
+svg = zscore(svg,0,1)
+
+while 1
+    functween(ax,svg)
+    pause(1)
+    Cascadefunctween(ax,[x(:),y(:)])
+    pause(1)
+end
+
+%% Okay, now I want to see how it works with a multiple part SVG
+% Oh weird... It can only import illustrator brush strokes... It can't do
+% penstrokes...
+face = readSVG('multiparts.svg',1000);
+
+x = linspace(-3,3,1000)';
+
+figure;
+ax = plot(x);
+while 1 
+    functween(ax,[x(:),sin(5*x)]);
+    
+end
+
+
+function xy = readSVG(path,points)
+    parts = loadsvg(path,.01,0);
+    doublesvg = [];
+    for i = 1:length(parts)
+        doublesvg = [doublesvg; parts{1,i}];
+    end
+    M = length(doublesvg(:,1));
+    xi = linspace(1, M, points);
+    x_downsampled = interp1(1:M, doublesvg(:,1), xi);
+    M = length(doublesvg(:,2));
+    xi = linspace(1, M, points);
+    y_downsampled = interp1(1:M, doublesvg(:,2), xi);
+
+    xy = [x_downsampled(:),y_downsampled(:)];
+end
+
+% how in the hell do I do this? Multithreading? Nah... Probably not. I
+% don't want it to get that complicated... I'll start with something
+% simple... I'll pass in two ax objects in a cell... I'll pass in the same
+% thing with the startfunc and endfunc variables... a 2x1 cell that have
+% two columns each...
+function MultiCascade(ax,endfunc)
+    startfunc = cell(1,length(ax));
+    for j = 1:length(ax)
+        currentAx = ax{j};
+        startfunc{1,j} = [currentAx.XData',currentAx.YData'];
+    end
+    frames = 100;
+    c = 5;
+    
+
+    xdistCell = cell(1,length(ax));
+    ydistCell = cell(1,length(ax));
+    pdCellx = cell(1,length(ax));
+    pdCelly = cell(1,length(ax));
+
+    % below must be done per axis object
+    for j = 1:length(ax)
+        subEnd = endfunc{1,j};
+        subStart = startfunc{1,j};
+
+        xdist = subEnd(:,1)-subStart(:,1);
+        ydist = subEnd(:,2)-subStart(:,2);
+        predestX = zeros(frames,length(subStart)); %predetermining every point's movement
+        predestY = zeros(frames,length(subStart));
+        for i = 1:frames
+            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+            predestX(i,:) = subStart(:,1)+dist*xdist;
+            predestY(i,:) = subStart(:,2)+dist*ydist;
+        end
+        predestX = [subStart(:,1)';predestX];
+        predestY = [subStart(:,2)';predestY];
+        
+        % Storing the predestined paths per plot
+        pdCellx{1,j} = predestX;
+        pdCelly{1,j} = predestY;
+    end
+
+    stagXCell = cell(1,length(ax));
+    stagYCell = cell(1,length(ax));
+    for j = 1:length(ax)
+        stagXCell{1,j} = stagger_matrix(pdCellx{1,j});
+        stagYCell{1,j} = stagger_matrix(pdCelly{1,j});
+    end
+    
+    for i = 1:size(stagXCell{1,1},1)
+        for j = 1:length(ax)
+            curStagX = stagXCell{1,j};
+            curStagY = stagYCell{1,j};
+            set(ax{1,j},'XData',curStagX(i,:),'YData',curStagY(i,:))
+        end
+        drawnow
+    end
+    
 end
 
 
 
+% Okay, so you actually don't really need a start func... Not anymore... If
+% you have a startfunc, then it just assumes that whatever is currently
+% plotted is the startfunc...
 function Cascadefunctween(ax,startfunc,endfunc)
     if nargin == 2
         endfunc = startfunc;
@@ -180,7 +361,9 @@ function Cascadefunctween(ax,startfunc,endfunc)
         predestY(i,:) = startfunc(:,2)+dist*ydist;
         %set(ax,'XData',startfunc(:,1)+dist*xdist,'YData',startfunc(:,2)+dist*ydist)
     end
-    
+    predestX = [startfunc(:,1)';predestX];
+    predestY = [startfunc(:,2)';predestY];
+
     stagX = stagger_matrix(predestX);
     stagY = stagger_matrix(predestY);
     for i = 1:size(stagX,1)
@@ -189,10 +372,26 @@ function Cascadefunctween(ax,startfunc,endfunc)
     end
 end
 
-
+%Another chatGpt generation... I don't know how to make a clever
+%interpolation function like this... I hope it'll work...
+%goddamn... It worked... I'm impressed...
+function [newfunc] = interpolateCurve(xy, Nnew)
+    %xy = [x(:), y(:)];
+    x = xy(:,1);
+    y = xy(:,2);
+    dxy = diff(xy);
+    segment_lengths = sqrt(sum(dxy.^2,2));
+    cumlen = [0; cumsum(segment_lengths)];
+    totalLength = cumlen(end);
+    tnew = linspace(0, totalLength, Nnew);
+    xnew = interp1(cumlen, x(:), tnew)';
+    ynew = interp1(cumlen, y(:), tnew)';
+    newfunc = [xnew,ynew];
+end
 
 % This is a function that would stagger a matrix... it's for cascading...
 % Cards on the table, I asked chatgpt to make this...
+% Okay, not anymore... it's modded from chatgpt lol
 function B = stagger_matrix(A)
     [N, M] = size(A);
     L = N + M - 1; % new length of staggered mat. I gotta change this if I'm gonna run this again...
@@ -262,9 +461,13 @@ end
 % length. 
 % Each function needs a column of x and y 
 function functween(ax,startfunc,endfunc)
+    if nargin == 2
+        endfunc = startfunc;
+        startfunc(:,1) = ax.XData;
+        startfunc(:,2) = ax.YData;
+    end
     frames = 100;
-    c = 5;
-    
+    c = 5;  
 
     xdist = endfunc(:,1)-startfunc(:,1);
     ydist = endfunc(:,2)-startfunc(:,2);

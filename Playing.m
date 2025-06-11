@@ -210,7 +210,7 @@ ax2 = plot(x,sin(10*x),'o');
 ax3 = plot(x,x*1.2,'o');
 xlim([0,3])
 ylim([-3,3])
-svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\test.svg',.99,0);
+svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\MatlabAnimation\test.svg',.99,0);
 svg = interpolateCurve(svg{1,1},length(x));
 % Let's normalize to a -3,3 grid... Wait... I can just zscore conveniently
 % LMFAOOOOO THAT WORKED HOLY SHIT
@@ -229,7 +229,58 @@ while 1
     MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
 end
 
+%% Testing with previous functions
+figure;
+x = linspace(-3,3,300);
+y = sin(5*x);
+ax = plot(x,y,'o');
+xlim([-3,3])
+ylim([-3,3])
+svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\MatlabAnimation\test.svg',.99,0);
+svg = interpolateCurve(svg{1,1},length(x));
+svg = zscore(svg,0,1)
 
+while 1
+    functween(ax,svg)
+    pause(1)
+    Cascadefunctween(ax,[x(:),y(:)])
+    pause(1)
+end
+
+%% Okay, now I want to see how it works with a multiple part SVG
+% Oh weird... It can only import illustrator brush strokes... It can't do
+% penstrokes...
+face = readSVG('multipart.svg',1000);
+face = zscore(face,0,1);
+x = linspace(-3,3,1000)';
+
+figure;
+ax = plot(x,sin(5*x),'o');
+xlim([-3,3])
+ylim([-3,3])
+while 1 
+    functween(ax,[x(:),sin(5*x)]);
+    pause(1)
+    functween(ax,face);
+    pause(1)
+end
+
+
+function xy = readSVG(path,points)
+    parts = loadsvg(path,.01,0);
+    doublesvg = [];
+    for i = 1:length(parts)
+        doublesvg = [doublesvg; -1*parts{1,i}];
+    end
+    M = length(doublesvg(:,1));
+    xi = linspace(1, M, points);
+    x_downsampled = interp1(1:M, doublesvg(:,1), xi);
+    M = length(doublesvg(:,2));
+    xi = linspace(1, M, points);
+    y_downsampled = interp1(1:M, doublesvg(:,2), xi);
+
+    xy = [x_downsampled(:),y_downsampled(:)];
+end
 
 % how in the hell do I do this? Multithreading? Nah... Probably not. I
 % don't want it to get that complicated... I'll start with something
@@ -414,9 +465,13 @@ end
 % length. 
 % Each function needs a column of x and y 
 function functween(ax,startfunc,endfunc)
+    if nargin == 2
+        endfunc = startfunc;
+        startfunc(:,1) = ax.XData;
+        startfunc(:,2) = ax.YData;
+    end
     frames = 100;
-    c = 5;
-    
+    c = 5;  
 
     xdist = endfunc(:,1)-startfunc(:,1);
     ydist = endfunc(:,2)-startfunc(:,2);
