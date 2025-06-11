@@ -156,11 +156,102 @@ ylim([-3,3])
 while 1
     Cascadefunctween(ax,[x,y],[x,3*y]);
     Cascadefunctween(ax,[x,3*y],[x,y]);
+    panCam(ax,[0,3;0,9]);
+    Cascadefunctween(ax,[x,3*x]);
+    panCam(ax,[0,3;-3,3])
+    Cascadefunctween(ax,[x,y]);
+end
+
+%% Okay, now how about we augment the Cascade functween to have multiple plots?
+% how in the hell do I do this? Multithreading? Nah... Probably not. I
+% don't want it to get that complicated... I'll start with something
+% simple... I'll pass in two ax objects in a cell... I'll pass in the same
+% thing with the startfunc and endfunc variables... a 2x1 cell that have
+% two columns each...
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+hold on;
+ax2 = plot(x,sin(10*x),'o');
+xlim([0,3])
+ylim([-3,3])
+
+MultiCascade({ax,ax2},{[x,1.5*y],[x,3*y]});
+
+%% HOLY SHIT that worked
+
+% how in the hell do I do this? Multithreading? Nah... Probably not. I
+% don't want it to get that complicated... I'll start with something
+% simple... I'll pass in two ax objects in a cell... I'll pass in the same
+% thing with the startfunc and endfunc variables... a 2x1 cell that have
+% two columns each...
+function MultiCascade(ax,endfunc)
+    startfunc = cell(1,length(ax));
+    for j = 1:length(ax)
+        currentAx = ax{j};
+        startfunc{1,j} = [currentAx.XData',currentAx.YData'];
+    end
+    frames = 100;
+    c = 5;
+    
+
+    xdistCell = cell(1,length(ax));
+    ydistCell = cell(1,length(ax));
+    pdCellx = cell(1,length(ax));
+    pdCelly = cell(1,length(ax));
+
+    % below must be done per axis object
+    for j = 1:length(ax)
+        subEnd = endfunc{1,j};
+        subStart = startfunc{1,j};
+
+        xdist = subEnd(:,1)-subStart(:,1);
+        ydist = subEnd(:,2)-subStart(:,2);
+        predestX = zeros(frames,length(subStart)); %predetermining every point's movement
+        predestY = zeros(frames,length(subStart));
+        for i = 1:frames
+            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+            predestX(i,:) = subStart(:,1)+dist*xdist;
+            predestY(i,:) = subStart(:,2)+dist*ydist;
+        end
+        predestX = [subStart(:,1)';predestX];
+        predestY = [subStart(:,2)';predestY];
+        
+        % Storing the predestined paths per plot
+        pdCellx{1,j} = predestX;
+        pdCelly{1,j} = predestY;
+    end
+
+    stagXCell = cell(1,length(ax));
+    stagYCell = cell(1,length(ax));
+    for j = 1:length(ax)
+        stagXCell{1,j} = stagger_matrix(pdCellx{1,j});
+        stagYCell{1,j} = stagger_matrix(pdCelly{1,j});
+    end
+    
+    for i = 1:size(stagXCell{1,1},1)
+        for j = 1:length(ax)
+            curStagX = stagXCell{1,j};
+            curStagY = stagYCell{1,j};
+            set(ax{1,j},'XData',curStagX(i,:),'YData',curStagY(i,:))
+        end
+        drawnow
+    end
+    
 end
 
 
 
+% Okay, so you actually don't really need a start func... Not anymore... If
+% you have a startfunc, then it just assumes that whatever is currently
+% plotted is the startfunc...
 function Cascadefunctween(ax,startfunc,endfunc)
+    if nargin == 2
+        endfunc = startfunc;
+        startfunc(:,1) = ax.XData;
+        startfunc(:,2) = ax.YData;
+    end
     frames = 100;
     c = 5;
     xdist = endfunc(:,1)-startfunc(:,1);
@@ -173,7 +264,9 @@ function Cascadefunctween(ax,startfunc,endfunc)
         predestY(i,:) = startfunc(:,2)+dist*ydist;
         %set(ax,'XData',startfunc(:,1)+dist*xdist,'YData',startfunc(:,2)+dist*ydist)
     end
-    
+    predestX = [startfunc(:,1)';predestX];
+    predestY = [startfunc(:,2)';predestY];
+
     stagX = stagger_matrix(predestX);
     stagY = stagger_matrix(predestY);
     for i = 1:size(stagX,1)
@@ -181,6 +274,8 @@ function Cascadefunctween(ax,startfunc,endfunc)
         drawnow
     end
 end
+
+
 
 % This is a function that would stagger a matrix... it's for cascading...
 % Cards on the table, I asked chatgpt to make this...
