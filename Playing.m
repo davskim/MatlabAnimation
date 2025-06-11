@@ -179,7 +179,28 @@ ylim([-3,3])
 
 MultiCascade({ax,ax2},{[x,1.5*y],[x,3*y]});
 
-%% HOLY SHIT that worked
+%% HOLY SHIT that worked. Let's see if this works with everything...
+figure;
+x = [(1:300) / 100]';
+y = sin(5*x);
+ax = plot(x,y,'o');
+hold on;
+ax2 = plot(x,sin(10*x),'o');
+ax3 = plot(x,x*1.2,'o');
+xlim([0,3])
+ylim([-3,3])
+
+axcell = {ax,ax2,ax3};
+while 1
+    MultiCascade(axcell,{[x,2*sin(12*x)],[x,3*sin(x)],[x,1.5*sin(4*x)]})
+    panCam(ax,[-3,3;-3,3])
+    MultiCascade(axcell,{[cos(linspace(0,2*pi,300)')*2,sin(linspace(0,2*pi,300)')*2], ...
+        [cos(linspace(0,2*pi,300)')*.5,sin(linspace(0,2*pi,300)')*.5], ...
+        [cos(linspace(0,2*pi,300)'),sin(linspace(0,2*pi,300)')]})
+    panCam(ax,[0,3;-3,3])
+end
+
+
 
 % how in the hell do I do this? Multithreading? Nah... Probably not. I
 % don't want it to get that complicated... I'll start with something
