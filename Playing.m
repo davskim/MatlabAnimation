@@ -210,7 +210,7 @@ ax2 = plot(x,sin(10*x),'o');
 ax3 = plot(x,x*1.2,'o');
 xlim([0,3])
 ylim([-3,3])
-svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\MatlabAnimation\test.svg',.99,0);
+svg = loadsvg('test.svg',.99,0);
 svg = interpolateCurve(svg{1,1},length(x));
 % Let's normalize to a -3,3 grid... Wait... I can just zscore conveniently
 % LMFAOOOOO THAT WORKED HOLY SHIT
@@ -236,7 +236,7 @@ y = sin(5*x);
 ax = plot(x,y,'o');
 xlim([-3,3])
 ylim([-3,3])
-svg = loadsvg('C:\Users\duck7\University of Michigan Dropbox\David Kim\Animation Playing\MatlabAnimation\test.svg',.99,0);
+svg = loadsvg('test.svg',.99,0);
 svg = interpolateCurve(svg{1,1},length(x));
 svg = zscore(svg,0,1)
 
@@ -265,6 +265,109 @@ while 1
     pause(1)
 end
 
+%% I wanna make something with this now...
+% Shall we try... I don't know... Splitting a ephys signal into different
+% parts? Something spikesortingy? I originally wanted to use this to
+% explain PCA, but... Hmmm... I think I need to get better functionality to
+% actually get something as beautiful as I think 3b1b's videos are...
+
+filepath = 'D:\15minNZ\sim_binary.dat';
+bin = bz_LoadBinary(filepath,'frequency',20000,'nChannels',32);
+
+figure; 
+chans = [3,4,5,6];
+for i = 1:4
+    subplot(4,1,i);
+    plot(bin(10000:15000,chans(i)));
+    axis tight;
+    ylim([-1500,1500])
+end
+
+%% Making some cool stuff...
+subdat = bin(10000:15000,3:6);
+thisguy = NormPlot(subdat(:,1),2000);
+
+ax = canvas(thisguy,[],[-6,6],'-')
+while 1
+    functween(ax,NormPlot(subdat(:,2),2000));
+    pause(1)
+    functween(ax,NormPlot(subdat(:,3),2000));
+    pause(1)
+    functween(ax,NormPlot(subdat(:,4),2000));
+    pause(1)
+    functween(ax,NormPlot(subdat(:,1),2000));
+    pause(1)
+end
+
+%% Let's try using spmd and parallel computing...
+%parpool(2)
+
+%% This might get a bit chaotic and indeterminant...
+% Wait. I'm not sure if this works... I might not be able to use this after
+% all... Ah well...
+
+
+% ax = canvas(thisguy,'-')
+% while 1
+% spmd
+%     functween(ax,NormPlot(subdat(:,2),2000));
+%     pause(1)
+%     functween(ax,NormPlot(subdat(:,3),2000));
+%     pause(1)
+%     functween(ax,NormPlot(subdat(:,4),2000));
+%     pause(1)
+%     functween(ax,NormPlot(subdat(:,1),2000));
+%     pause(1)
+% end
+%     panCam(ax,[-4,4;-6,6])
+%     panCam(ax,[-3,3;-5,5])
+% end
+
+%% I really need to try to integrate doing multiple things at once...
+% For instance, I need to be able to continuously transform objects WHILE
+% having something that is animating on a different layer... This sounds
+% really REALLY tough...
+%
+% OH WAIT! What if i weaved the PREDETERMINED PATHS of each object???
+
+
+% Initializes the canvas
+function ax = canvas(func,x,y,str)
+    if nargin == 2
+        str = x;
+        x = [-3,3];
+        y = [-3,3];
+    elseif nargin == 3
+        str = 'o';
+        if isempty(x)
+            x = [-3,3];
+        end
+    end
+    if isempty(x)
+        x = [-3,3];
+    end
+    if isempty(y)
+        y = [-3,3];
+    end
+
+    figure;
+    ax = plot(func(:,1),func(:,2),str);
+    xlim(x)
+    ylim(y)
+end
+
+% Basically, I want a function that takes in any given plot, normalizes it
+% to be compatible to the 6x6 grid that I have... 
+% Also, let's just have this make an explicit amount of samples as well
+% just for convenience
+function anifriend = NormPlot(func,samps)
+    funx = linspace(-3,3,samps);
+    func = double(func);
+    normfunc = zscore(func);
+    
+    redfunc = interp1(linspace(-3,3,length(func))',normfunc,funx);
+    anifriend = [funx(:),redfunc(:)];
+end
 
 function xy = readSVG(path,points)
     parts = loadsvg(path,.01,0);
