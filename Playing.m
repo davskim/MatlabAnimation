@@ -289,7 +289,7 @@ thisguy = NormPlot(subdat(:,1),2000);
 
 ax = canvas(thisguy,[],[-6,6],'-')
 while 1
-    functween(ax,NormPlot(subdat(:,2),2000));
+    LineDraw(ax,NormPlot(subdat(:,2),2000));
     pause(1)
     functween(ax,NormPlot(subdat(:,3),2000));
     pause(1)
@@ -330,6 +330,285 @@ end
 %
 % OH WAIT! What if i weaved the PREDETERMINED PATHS of each object???
 
+%% As a quick aside, maybe I should actually use it to develop my own intuition...
+% Let's visualize a linear transformation
+x = (rand(1,50) -.5 ) * 2.5;
+y = (rand(1,50) -.5 ) * 2.5;
+ax = canvas([x(:),y(:)],'o')
+
+while 1
+    xlim(ax.Parent,[-3,3])
+    ylim(ax.Parent,[-3,3])
+    set(ax,'XData',x,'YData',y)
+    pause(.5)
+    panCam(ax,[-6,6;-6,6])
+    pause(1)
+    functween(ax,[x(:),y(:)],([3,2;1,2]*[x(:),y(:)]')')
+    pause(1)
+
+end
+
+%% Okay, this is pretty nice visualization, but I would also like a line to
+% be drawn along the eigenvectors... I guess I'd have to animate lines,
+% huh? That... Hmmm... I hope that isn't too hard... Should I just go
+% through and modify transparencies? Or should I append data? Eh... Let's
+% go transparencies... Oh... Matlab doesn't support that right now. Bummer.
+
+x = linspace(-2.5,2.5,3000);
+ax = canvas([x(:),x(:)],'-');
+
+while 1
+    LineDraw(ax,[x(:),sin(5*x(:))]);
+    pause(1)
+    Cascadefunctween(ax,ones(length(x),2)*x(1))
+    LineDraw(ax,[x(:),x(:)]);
+    pause(1)
+    functween(ax,ones(length(x),2)*x(1))
+    pause(1)
+    %LineDraw(ax,NormPlot(subdat(:,2),1000))
+    %LineDraw(ax,x')
+end
+
+
+%% Can this do bars?
+% Yes it can holy shit...
+x = 1:5;
+y = 5 * (rand(1,5));
+ax = bar(x,y)
+ylim([0,6])
+xlim([0,6])
+
+while 1
+    y = 5*rand(1,5);
+    functween(ax,[x(:),y(:)])
+    pause(.25)
+end
+% while 1
+%     y = 5*rand(1,5);
+%     LineDraw(ax,[x(:),y(:)]);
+%     pause(.25)
+% end
+
+%% Okay, a bit of a jump
+% I wanna be able to draw out phase portraits because I'm in a small
+% diffeqs phase at the moment... I wanna start out with a system of linear
+% differential equations that is derived from a single homogeneous second
+% order linear differential equation... I'm PRETTY SURE that means that
+% it'll take the form of 
+%   [x' ]  = [0 1] * [x']
+%   [x'']    [a b]   [x ] 
+% I don't know how I should do this... Should I simulate? Or should I solve
+% analytically and plot? Let's try both...
+
+% I also just realized I never tried to control 2 graphs independently on
+% one single plot yet... Nuts...
+
+[pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
+
+x_0 = 3;
+x1_0 = 2;
+xinit = [x_0;x1_0];
+system = [0,1;-1,-2];
+allpath = {};
+for j = 1:size(pointsx,2)
+    for i = 1:size(pointsx,1)
+        xinit = [pointsx(i,j),pointsy(i,j)];
+        x = simDEQ(system,xinit,1,3000)';
+        allpath{i,j} = x;
+    end
+end
+
+% calculating eigens
+[evec,evals] = eig(system);
+
+ax = canvas(x,[-10,10],[-10,10],'-');
+hold on;
+ex = linspace(-10,10,100);
+plot(ex,ex*(evec(2,1) / evec(1,1)),'LineWidth',2) %rise over run...
+plot(ex,ex*(evec(2,2) / evec(1,2)),'LineWidth',2)
+for i = 1:size(pointsx,1)
+    for j = 1:size(pointsy,1)
+        curx = allpath{i,j};
+        ax = plot(curx(:,1),curx(:,1));
+        LineDraw(ax,curx)
+    end
+end
+
+
+%% I want to have all of them move at once...
+
+[pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
+
+x_0 = 3;
+x1_0 = 2;
+xinit = [x_0;x1_0];
+system = [0,1;-1,-3];
+allpath = {};
+for j = 1:size(pointsx,2)
+    for i = 1:size(pointsx,1)
+        xinit = [pointsx(i,j),pointsy(i,j)];
+        x = simDEQ(system,xinit,3,3000)';
+        allpath{i,j} = x;
+    end
+end
+
+% calculating eigens
+[evec,evals] = eig(system);
+
+figure;
+ax = blank(x,'-',[-10,10],[-10,10]);
+hold on;
+ex = linspace(-10,10,100);
+plot(ex,ex*(evec(2,1) / evec(1,1)),'LineWidth',2) %rise over run...
+plot(ex,ex*(evec(2,2) / evec(1,2)),'LineWidth',2)
+axs = {};
+for i = 1:size(pointsx,1)
+    for j = 1:size(pointsy,1)
+        curx = allpath{i,j};
+        axs{i,j} = blank(curx,'-');
+    end
+end
+xlim([-6,6])
+ylim([-6,6])
+
+axs = reshape(axs,1,[]);
+allpath = reshape(allpath,1,[]);
+while 1
+    LineDraw2(axs,allpath);
+end
+
+
+% Something to solve diffeqs
+% This specifically only solves systems of diffeqs in R2...
+function x = simDEQ(system,xinit,time,frames) 
+    a = 1;
+    b = 2;
+    
+    dt = time / frames;
+    
+    x = zeros(2,frames);
+    x(:,1) = xinit;
+    for i = 1:frames-1
+        deriv = system * x(:,i);
+        x(:,i+1) = x(:,i) + (dt*deriv);
+    end
+end
+
+
+% I'm gonna make an improved version of my linedraw function. Basically, I
+% want to upgrade it so that we can animate an entire cell of lines at
+% once... I'll make it optional to have everything actually plot. That'll
+% be a boolean value that I'll set... If it's set to zero, it'll just
+% output a cell of animation "layers" that I'll have a separate animate
+% function for... I think that animate function could end up being a heart
+% of my code...
+
+function frameSeq = LineDraw2(ax,endfunc)
+    if iscell(ax) && sum(size(ax)) > 2 %checking if there are multiple axes...
+        multi = true;
+    end
+    if ~multi %if it's not multiple plots, just draw the line as is...
+        frameSeq = LineDraw(ax,endfunc);
+        return
+    end
+    frames = 100;
+    c = 5; 
+    
+    % I have to loop through every axis in the ax cell...
+    xFramCell = {};
+    yFramCell = {};
+    assert(iscell(endfunc))
+    assert(iscell(ax))
+    assert(length(endfunc) == length(ax))
+    pdXCell = cell(1,length(endfunc));
+    pdYCell = cell(1,length(endfunc));
+    for j = 1:length(ax)
+        %predetermining every point's movement
+        thisendfunc = endfunc{1,j};
+        xvec = thisendfunc(:,1)';
+        yvec = thisendfunc(:,2)';
+        predestX = repmat(xvec,frames,1);
+        predestY = repmat(yvec,frames,1);
+       
+        % I call this below "carving"
+        % basically it takes the frame stack and carves out where the
+        % line should not be plotted based on that inverse function...
+        logvec = linspace(0,1,length(thisendfunc));
+        for i = 1:frames
+            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+            predestX(i,logvec > dist) = NaN;
+            predestY(i,logvec > dist) = NaN;
+        end
+        pdXCell{1,j} = predestX;
+        pdYCell{1,j} = predestY;
+        frameSeq{1,j} = {predestX predestY};
+    end
+
+    % Okay, now that we looped through and got all the frame stacks, now we
+    % can plot all the axes... one at a time...
+    hold on;
+    for i = 1:frames
+        for j = 1:length(ax)
+            predestX = pdXCell{1,j};
+            predestY = pdYCell{1,j};
+            set(ax{1,j},'XData',predestX(i,:),'YData',predestY(i,:))
+        end
+        drawnow
+    end
+end
+
+
+% Line plot that draws a line lol...
+% I wonder though... Should I interpolate so that I can use this generally?
+% Nah, I should staircase it... I'll pass in the line function very
+% explicitly and expect it to preserve the number of datapoints... Perhaps
+% I'll make an augmentation of this in the future to only require 2 points
+% and it'll draw a line between the two points that you pass in...
+function frameSeq = LineDraw(ax,startfunc,endfunc)
+    if nargin == 2 %Default usage. Basically requires no previous funcion
+        endfunc = startfunc;
+        startfunc(:,1) = ax.XData;
+        startfunc(:,2) = ax.YData;
+    end
+    frames = 100;
+    c = 5; 
+    
+    %predetermining every point's movement
+    xvec = endfunc(:,1)';
+    yvec = endfunc(:,2)';
+    predestX = repmat(xvec,frames,1);
+    predestY = repmat(yvec,frames,1);
+    
+    logvec = linspace(0,1,length(endfunc));
+    for i = 1:frames
+        dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+        predestX(i,logvec > dist) = NaN;
+        predestY(i,logvec > dist) = NaN;
+    end
+
+    for i = 1:size(predestX,1)
+        set(ax,'XData',predestX(i,:),'YData',predestY(i,:))
+        drawnow
+    end
+    frameSeq = {predestX,predestY};
+end
+
+function mask = Staircase(M,N)
+    [rowIdx, colIdx] = ndgrid(1:M, 1:N);
+    mask = rowIdx < colIdx * (M/N);
+end
+
+function ax = blank(func,str,x,y)
+    if nargin == 2
+        x = [-3,3];
+        y = [-3,3];
+    end
+    
+    siz = size(func,1);
+    ax = plot(nan(1,siz),nan(1,siz),str);
+    xlim(x);
+    ylim(y);
+end
 
 % Initializes the canvas
 function ax = canvas(func,x,y,str)
