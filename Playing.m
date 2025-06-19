@@ -474,18 +474,129 @@ ylim([-6,6])
 axs = reshape(axs,1,[]);
 allpath = reshape(allpath,1,[]);
 while 1
-    LineDraw2(axs,allpath);
+    LineDraw2(axs,allpath,@LinCarv);
 end
 
+%% Redoing this except with only looking at the projection onto x
+    [pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
+
+    x_0 = 3;
+    x1_0 = 2;
+    xinit = [x_0;x1_0];
+    %system = [0,1;-4,-1];
+    allpath = {};
+    for j = 1:size(pointsx,2)
+        for i = 1:size(pointsx,1)
+            xinit = [pointsx(i,j),pointsy(i,j)];
+            x = simDEQ(system,xinit,3,3000)';
+            allpath{i,j} = x;
+        end
+    end
+    
+    figure;
+    axs = {};
+    ax = blank(x,'-',[-10,10],[-10,10]);
+    hold on;
+    for i = 1:size(pointsx,1)
+        for j = 1:size(pointsy,1)
+            curx = allpath{i,j};
+            axs{i,j} = blank(curx,'-');
+        end
+    end
+    
+    allpath = reshape(allpath,1,[]);
+    pathproj = {};
+    t = linspace(0,3,3000);
+    for i = 1:length(allpath)
+        thispath = allpath{1,i};
+        pathproj{1,i} = [t(:),thispath(:,1)];
+    end
+    xlim([0,3])
+    ylim([-6,6])
+    
+    axs = reshape(axs,1,[]);
+    while 1
+        LineDraw2(axs,pathproj,@LinCarv);
+    end
+
+ %% Redoing this except with a nonlinear...
+    [pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
+    x_0 = 3;
+    x1_0 = 2;
+    xinit = [x_0;x1_0];
+    func1 = @(s) -1*s^2+1;
+    func2 = @(s) s^2-s-1;
+    allpath = {};
+    for j = 1:size(pointsx,2)
+        for i = 1:size(pointsx,1)
+            xinit = [pointsx(i,j),pointsy(i,j)];
+            x = simDEQ2(func1,func2,xinit,3,3000)'; % should spit out a xy function...
+            allpath{i,j} = x;
+        end
+    end
+    
+    figure;
+    axs = {};
+    hold on;
+    for i = 1:size(pointsx,1)
+        for j = 1:size(pointsy,1)
+            curx = allpath{i,j};
+            axs{i,j} = blank(curx,'-');
+        end
+    end
+    allpath = reshape(allpath,1,[]);
+    axs = reshape(axs,1,[]);
+    xlim([-10,10])
+    ylim([-10,10])
+    
+    
+    while 1
+        LineDraw2(axs,allpath,@LinCarv);
+    end
+
+    %% Cool... I wanna do hodgekin huxley...
+    % Okay, I guess while I was at it, I made the blank canvas function
+    % like a million times better lol...
+    %
+    % axs = Preplot(allpath,'-');
+    % LineDraw2(axs,allpath)
+    %
+    % Anyways
+    
+    [pointsx,pointsy,pointsz] = ndgrid(linspace(-5,5,10),linspace(-5,5,10),linspace(-5,5,10));
+    func1 = @(s) (s(1)^2)/5;
+    func2 = @(s) s(2)^2-1;
+    func3 = @(s) 1/s(3);
+    allpath = {};
+    for j = 1:size(pointsx,2)
+        for i = 1:size(pointsx,1)
+            xinit = [pointsx(i,j),pointsy(i,j),pointsz(i,j)];
+            x = simDEQ3({func1,func2,func3},xinit,3,3000)'; % should spit out a xy function...
+            allpath{i,j} = x;
+        end
+    end
+    
+    allpath = reshape(allpath,1,[]);
+    axs = Preplot(allpath,'-',[-5,20],[-5,20]);
+    LineDraw2(axs,allpath,@LinCarv);
+
+
+
+    
 
 % Something to solve diffeqs
-% This specifically only solves systems of diffeqs in R2...
-function x = simDEQ(system,xinit,time,frames) 
-    a = 1;
-    b = 2;
-    
+% This specifically only solves systems of diffeqs in R2... I'm kinda
+% certain that it CAN in theory do solutions in Rn, but obviously you can't
+% visualize beyond three dimensions anyway...
+% And even more specifically, only linear systems lmfao...
+% I need something for nonlinear systems...
+% Ah fuck... I want to make another one but for generalized functions, but
+% adding in a function handle is wack... I also don't wanna make it all the
+% fuck the way at the bottom of the script...
+% Anonymous functions were apparently the answer, but cmon... Nobody
+% actually knows how to use that shit...
+function x = simDEQ(system,xinit,time,frames)     
     dt = time / frames;
-    
     x = zeros(2,frames);
     x(:,1) = xinit;
     for i = 1:frames-1
@@ -494,6 +605,34 @@ function x = simDEQ(system,xinit,time,frames)
     end
 end
 
+% Can only do 2 dims right now... Whoops... Second order nonlinear diffeqs
+% are possible now though...
+% FINE I'll generalize it...
+function x = simDEQ2(func1,func2,xinit,time,frames)     
+    dt = time / frames;
+    x = zeros(2,frames);
+    x(:,1) = xinit;
+    for i = 1:frames-1
+        deriv1 = func1(x(1,i));
+        deriv2 = func2(x(2,i));
+        x(1,i+1) = x(1,i) + (dt*deriv1);
+        x(2,i+1) = x(2,i) + (dt*deriv2);
+    end
+end
+
+% generalized...
+function x = simDEQ3(funcs, xinit,time,frames)     
+    dt = time / frames;
+    x = zeros(length(funcs),frames);
+    x(:,1) = xinit;
+    for i = 1:frames-1
+        for j = 1:length(funcs)
+            thisfunc = funcs{j};
+            deriv = thisfunc(x(:,i));
+            x(j,i+1) = x(j,i) + (dt*deriv);
+        end
+    end
+end
 
 % I'm gonna make an improved version of my linedraw function. Basically, I
 % want to upgrade it so that we can animate an entire cell of lines at
@@ -503,7 +642,7 @@ end
 % function for... I think that animate function could end up being a heart
 % of my code...
 
-function frameSeq = LineDraw2(ax,endfunc)
+function frameSeq = LineDraw2(ax,endfunc,func,autoscale)
     if iscell(ax) && sum(size(ax)) > 2 %checking if there are multiple axes...
         multi = true;
     end
@@ -511,6 +650,21 @@ function frameSeq = LineDraw2(ax,endfunc)
         frameSeq = LineDraw(ax,endfunc);
         return
     end
+    if nargin == 2
+        func = @InvCarv;
+        autoscale = false;
+    elseif nargin == 3
+        autoscale = false;
+    end
+    
+    %checking for autoscaling
+    if autoscale
+        for i = 1:length(endfunc)
+            % TODO... I stopped because diffeqs can become infinite, so
+            % whoopty do...
+        end
+    end
+
     frames = 100;
     c = 5; 
     
@@ -530,15 +684,9 @@ function frameSeq = LineDraw2(ax,endfunc)
         predestX = repmat(xvec,frames,1);
         predestY = repmat(yvec,frames,1);
        
-        % I call this below "carving"
-        % basically it takes the frame stack and carves out where the
-        % line should not be plotted based on that inverse function...
-        logvec = linspace(0,1,length(thisendfunc));
-        for i = 1:frames
-            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
-            predestX(i,logvec > dist) = NaN;
-            predestY(i,logvec > dist) = NaN;
-        end
+        predestX = func(predestX,frames);
+        predestY = func(predestY,frames);
+
         pdXCell{1,j} = predestX;
         pdYCell{1,j} = predestY;
         frameSeq{1,j} = {predestX predestY};
@@ -557,6 +705,30 @@ function frameSeq = LineDraw2(ax,endfunc)
     end
 end
 
+% I call this below "carving"
+% basically it takes the frame stack and carves out where the
+% line should not be plotted based on that inverse function...
+% Framestack must be in the format of frames x datalength matrix
+function carve = LinCarv(framestack,frames)
+    logvec = linspace(0,1,size(framestack,2));
+    c = 5;
+    for i = 1:frames
+        dist = i/frames; % Should go 0-1
+        framestack(i,logvec > dist) = NaN;
+    end
+    carve = framestack;
+end
+
+% Framestack must be in the format of frames x datalength matrix
+function carve = InvCarv(framestack,frames)
+    logvec = linspace(0,1,size(framestack,2));
+    c = 5;
+    for i = 1:frames
+        dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+        framestack(i,logvec > dist) = NaN;
+    end
+    carve = framestack;
+end
 
 % Line plot that draws a line lol...
 % I wonder though... Should I interpolate so that I can use this generally?
@@ -608,6 +780,33 @@ function ax = blank(func,str,x,y)
     ax = plot(nan(1,siz),nan(1,siz),str);
     xlim(x);
     ylim(y);
+end
+
+function ax = Preplot(func,str,x,y)
+    if nargin == 2
+        x = [-3,3];
+        y = [-3,3];
+    end
+    if iscell(func)
+        multi = true;
+    end
+    gcf; %creates a figure if one doesn't already exist
+    
+    if multi
+        ax = cell(1,length(func));
+        for i = 1:length(func)
+            siz = size(func{i},1);
+            hold on;
+            ax{i} = plot(nan(1,siz),nan(1,siz),str);
+        end
+        xlim(x)
+        ylim(y)
+    else
+        siz = size(func,1);
+        ax = plot(nan(1,siz),nan(1,siz),str);
+        xlim(x);
+        ylim(y);
+    end
 end
 
 % Initializes the canvas
