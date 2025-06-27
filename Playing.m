@@ -473,9 +473,8 @@ ylim([-6,6])
 
 axs = reshape(axs,1,[]);
 allpath = reshape(allpath,1,[]);
-while 1
-    LineDraw2(axs,allpath,@LinCarv);
-end
+LineDraw2(axs,allpath,@InvCarv,1);
+gifwritefromFS('PhasePortraitLinearSystem.gif',axs,LineDraw2(axs,allpath,@InvCarv,1));
 
 %% Redoing this except with only looking at the projection onto x
     [pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
@@ -515,9 +514,7 @@ end
     ylim([-6,6])
     
     axs = reshape(axs,1,[]);
-    while 1
-        LineDraw2(axs,pathproj,@LinCarv);
-    end
+    gifwritefromFS('linearPhasePortrait.gif',axs,LineDraw2(axs,pathproj,@LinCarv));
 
  %% Redoing this except with a nonlinear...
     [pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
@@ -562,7 +559,7 @@ end
     % LineDraw2(axs,allpath)
     %
     % Anyways
-    
+    figure
     [pointsx,pointsy,pointsz] = ndgrid(linspace(-5,5,10),linspace(-5,5,10),linspace(-5,5,10));
     func1 = @(s) (s(1)^2)/5;
     func2 = @(s) s(2)^2-1;
@@ -578,11 +575,108 @@ end
     
     allpath = reshape(allpath,1,[]);
     axs = Preplot(allpath,'-',[-5,20],[-5,20]);
-    LineDraw2(axs,allpath,@LinCarv);
+    lol = LineDraw2(axs,allpath,@LinCarv);
 
+    gifwritefromFS('test2.gif',axs,lol);
 
-
+    %% Plotting ACGs
+    load('C:\Users\davskim\Downloads\Halfdanacg.mat');
     
+    samples = [];
+    for i = 1:length(acgs)
+        samples(i) = ~isempty(acgs{i});
+    end
+    samples = logical(samples);
+    samples = acgs(samples);
+
+    len = length(samples{1,1}.binCenters);
+    %ax = Preplot(1:len,'-',[min(samples{1,1}.binCenters),max(samples{1,1}.binCenters)],[0,100]);
+    ax = bar(zeros(1,len))
+    xlim([min(samples{1,1}.binCenters),max(samples{1,1}.binCenters)])
+    ylim([1,300])
+    framestacks = {};
+    for i = 1:10
+        framestacks{i,1} = functween2(ax,[samples{i,1}.binCenters(:), samples{i,1}.currentacg(:)]);
+        pause(1);
+    end
+
+    %% testing functween2
+    ax = Preplot(1:10, '-',[0,10],[-2,2]);
+    x = (1:1000) / 100;
+    y = sin(x *10);
+    lol = functween2(ax,[x(:),x(:)],[x(:),y(:)]);
+    
+    gifwritefromFS('functweentest.gif',{ax},{lol});
+
+%Okay, it'll accept a cell of frames... Each ROW represents frame stacks
+%that will start at the same time... each COLUMN represents frames that
+%should be animated afterwards... 
+function gifwritefromFS(filename,axs,framestack)
+    gcf;
+    set(gcf, 'Color', 'w');       % White figure background
+    set(gca, 'Color', 'w');   
+    axis off
+    for j = 1:size(framestack,1) %Starts at a row in the framestack cell
+        % fsrow = {};
+        % for i = 1:size(framestack,2) %Creates a fsrow subframestack
+        %     fsrow{i} = framestack{j,i};
+        % end
+        fsrow = framestack(j,:);
+        
+        try
+        frames = size(fsrow{1}{1},1); %fetches the number of frames TODO: make a function that fills in framestacks that are SMALLER
+        catch
+            error("try to put the framestack into a cell... Like gifwritefromFS('file.gif',{ax},{framestack}")
+        end
+        for k = 1:frames
+            for p = 1:length(axs)
+                thisguy = fsrow{1,p};
+                predestX = thisguy{1};
+                predestY = thisguy{2};
+                set(axs{1,p},'XData',predestX(k,:),'YData',predestY(k,:))
+            end
+            drawnow
+
+            % Actually writes the gif
+            frame = getframe(gcf);          % Capture current figure as frame
+            im = frame2im(frame);           % Convert frame to image
+            [A,map] = rgb2ind(im,256);
+            if k == 1
+                % First frame: create GIF, infinite loop
+                imwrite(A,map,filename,'gif','LoopCount',Inf,'DelayTime',0.03);
+            else
+                % Append subsequent frames
+                imwrite(A,map,filename,'gif','WriteMode','append','DelayTime',0.03);
+            end
+        end
+
+       
+
+    end
+      
+end
+
+% Something that chatgpt cooked up for me... It works, but something about
+% this really bothers me... I seriously do not want to shove this into
+% every single function... Instead, I'll try to make a function that
+% specifically takes in frame stacks and writes them... I don't know
+% exactly how I'll do this, but... Eh... fuck it...
+function gifwrite(filename,k)
+    frame = getframe(gcf);          % Capture current figure as frame
+    im = frame2im(frame);           % Convert frame to image
+    
+    % --- Convert to indexed image for GIF ---
+    [A,map] = rgb2ind(im,256);
+    
+    % --- Write to the GIF file ---
+    if k == 1
+        % First frame: create GIF, infinite loop
+        imwrite(A,map,filename,'gif','LoopCount',Inf,'DelayTime',0.03);
+    else
+        % Append subsequent frames
+        imwrite(A,map,filename,'gif','WriteMode','append','DelayTime',0.03);
+    end
+end
 
 % Something to solve diffeqs
 % This specifically only solves systems of diffeqs in R2... I'm kinda
@@ -642,7 +736,7 @@ end
 % function for... I think that animate function could end up being a heart
 % of my code...
 
-function frameSeq = LineDraw2(ax,endfunc,func,autoscale)
+function frameSeq = LineDraw2(ax,endfunc,func,autoscale,saveani)
     if iscell(ax) && sum(size(ax)) > 2 %checking if there are multiple axes...
         multi = true;
     end
@@ -653,7 +747,18 @@ function frameSeq = LineDraw2(ax,endfunc,func,autoscale)
     if nargin == 2
         func = @InvCarv;
         autoscale = false;
+        saveani = false;
     elseif nargin == 3
+        if ~isfloat(func)
+            autoscale = false;
+            saveani = false;
+        else
+            autoscale = false;
+            saveani = func;
+            func = @InvCarv;
+        end
+    elseif nargin == 4
+        saveani = autoscale;
         autoscale = false;
     end
     
@@ -702,6 +807,9 @@ function frameSeq = LineDraw2(ax,endfunc,func,autoscale)
             set(ax{1,j},'XData',predestX(i,:),'YData',predestY(i,:))
         end
         drawnow
+        if saveani 
+            gifwrite('test.gif',i)
+        end
     end
 end
 
@@ -789,6 +897,8 @@ function ax = Preplot(func,str,x,y)
     end
     if iscell(func)
         multi = true;
+    else
+        multi = false;
     end
     gcf; %creates a figure if one doesn't already exist
     
@@ -928,7 +1038,7 @@ end
 % Okay, so you actually don't really need a start func... Not anymore... If
 % you have a startfunc, then it just assumes that whatever is currently
 % plotted is the startfunc...
-function Cascadefunctween(ax,startfunc,endfunc)
+function framestack = Cascadefunctween(ax,startfunc,endfunc)
     if nargin == 2
         endfunc = startfunc;
         startfunc(:,1) = ax.XData;
@@ -955,6 +1065,7 @@ function Cascadefunctween(ax,startfunc,endfunc)
         set(ax,'XData',stagX(i,:),'YData',stagY(i,:))
         drawnow
     end
+    framestack = {stagX(:),stagY(:)};
 end
 
 %Another chatGpt generation... I don't know how to make a clever
@@ -1039,6 +1150,38 @@ function panCam(ax,panto)
         ylim(ax.Parent,curY + ydist*dist)
         drawnow
     end
+end
+
+% This is a revamped version of functween that can output framestacks and
+% also can work with the preplot function...
+function framestack = functween2(ax,startfunc,endfunc)
+    % Initializing this sort of works, but, not if it starts with a bunch
+    % of Nans... I need a startfunction...
+    if nargin == 2
+        endfunc = startfunc;
+        startfunc(:,1) = ax.XData;
+        startfunc(:,2) = ax.YData;
+    end
+    if ~sum(~isnan(startfunc),'all') %checking if they're all nan
+        error('You need a start function')
+    end
+    frames = 100;
+    c = 5;  
+
+    xdist = endfunc(:,1)-startfunc(:,1);
+    ydist = endfunc(:,2)-startfunc(:,2);
+    predestX = zeros(frames,length(startfunc)); %predetermining every point's movement
+    predestY = zeros(frames,length(startfunc));
+    for i = 1:frames
+        dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1)));
+        predestX(i,:) = startfunc(:,1)+dist*xdist;
+        predestY(i,:) = startfunc(:,2)+dist*ydist;
+    end
+    for i = 1:frames
+        set(ax,'XData',predestX(i,:),'YData',predestY(i,:))
+        drawnow
+    end
+    framestack = {predestX,predestY};
 end
 
 
