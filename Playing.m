@@ -606,9 +606,31 @@ LineDraw(axs,allpath,@InvCarv,1);
     y = sin(x *10);
     lol = functween(ax,[x(:),x(:)],[x(:),y(:)]);
     
-    gifwritefromFS('functweentest.gif',{ax},{lol});
+    x(1:5) = [];
+    y(1:5) = [];
+    functween(ax,[x(:),.5 *y(:)])
+    
+    %gifwritefromFS('functweentest.gif',{ax},{lol});
 
 
+    %% Back to the SVGs
+    % Let's test out SVGReadNew
+
+    face = SVGReadNew('multipart.svg',3000),1;
+    boxes = SVGReadNew('davidtest1.svg',3000),1;
+   % plot(face(:,1),face(:,2))
+    
+    
+    ax = Preplot(face,'-')
+    xlim([0,200])
+    ylim([0,200])
+    
+    while(1)
+        functween(ax,face,boxes / 3);
+        pause(1)
+        functween(ax,face);
+        pause(1)
+    end
 % Something to solve diffeqs
 % This specifically only solves systems of diffeqs in R2... I'm kinda
 % certain that it CAN in theory do solutions in Rn, but obviously you can't
@@ -644,32 +666,3 @@ function x = simDEQ2(func1,func2,xinit,time,frames)
         x(2,i+1) = x(2,i) + (dt*deriv2);
     end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
