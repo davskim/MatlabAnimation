@@ -615,9 +615,11 @@ LineDraw(axs,allpath,@InvCarv,1);
 
     %% Back to the SVGs
     % Let's test out SVGReadNew
+    % Huh... I wonder what those weird breaks are... Perhaps it's because
+    % we're tweening between Nans?
 
-    face = SVGReadNew('multipart.svg',3000),1;
-    boxes = SVGReadNew('davidtest1.svg',3000),1;
+    face = SVGReadNew('multipart.svg',1000,0),1;
+    boxes = SVGReadNew('davidtest1.svg',1000,0),1;
    % plot(face(:,1),face(:,2))
     
     
@@ -625,12 +627,43 @@ LineDraw(axs,allpath,@InvCarv,1);
     xlim([0,200])
     ylim([0,200])
     
+    LineDraw(ax,face);
     while(1)
         functween(ax,face,boxes / 3);
         pause(1)
-        functween(ax,face);
+        Cascadefunctween(ax,face);
+        pause(1)
+        LineDraw(ax,face);
         pause(1)
     end
+
+%% Trying out inherent normalization
+% This... This is good... Wow...
+face = SVGReadNew('multipart.svg',2000,1);
+boxes = SVGReadNew('davidtest1.svg',2000,1);
+hotdog = SVGReadNew('hotdog1.svg',2000,1);
+sandwich = SVGReadNew('sandwich.svg',2000,1);
+taco = SVGReadNew('taco.svg',2000,1);
+poptart = SVGReadNew('poptart.svg',2000,1);
+%uncrust = SVGReadNew('uncrustables.svg',2000,1);
+ax = Preplot(face,'-',[-4,4],[-4,4]);
+
+LineDraw(ax,face);
+while(1)
+    functween(ax,hotdog);
+    pause(1)
+    functween(ax,sandwich);
+    pause(1)
+    functween(ax,taco);
+    pause(1)
+    functween(ax,poptart); 
+    pause(1)
+    %functween(ax,uncrust);
+    %pause(1)
+end
+
+
+
 % Something to solve diffeqs
 % This specifically only solves systems of diffeqs in R2... I'm kinda
 % certain that it CAN in theory do solutions in Rn, but obviously you can't

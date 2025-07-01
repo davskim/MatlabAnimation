@@ -19,9 +19,14 @@ function framestack = functween(ax,startfunc,endfunc)
     predestX = zeros(frames,length(startfunc)); %predetermining every point's movement
     predestY = zeros(frames,length(startfunc));
     for i = 1:frames
-        dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1)));
-        predestX(i,:) = startfunc(:,1)+dist*xdist;
-        predestY(i,:) = startfunc(:,2)+dist*ydist;
+        if i ~= frames % This conditional is added to prevent Nan spaces...
+            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1)));
+            predestX(i,:) = startfunc(:,1)+dist*xdist;
+            predestY(i,:) = startfunc(:,2)+dist*ydist;
+        else
+            predestX(i,:) = endfunc(:,1);
+            predestY(i,:) = endfunc(:,2);
+        end
     end
     for i = 1:frames
         set(ax,'XData',predestX(i,:),'YData',predestY(i,:))

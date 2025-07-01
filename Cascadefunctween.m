@@ -16,10 +16,14 @@ function framestack = Cascadefunctween(ax,startfunc,endfunc)
     predestX = zeros(frames,length(startfunc)); %predetermining every point's movement
     predestY = zeros(frames,length(startfunc));
     for i = 1:frames
-        dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
-        predestX(i,:) = startfunc(:,1)+dist*xdist;
-        predestY(i,:) = startfunc(:,2)+dist*ydist;
-        %set(ax,'XData',startfunc(:,1)+dist*xdist,'YData',startfunc(:,2)+dist*ydist)
+        if i ~= frames % This conditional is added to prevent Nan spaces...
+            dist = (1+(1/c)) - ((c+1)/(c*(c*(i/frames) + 1))); % Should go 0-1
+            predestX(i,:) = startfunc(:,1)+dist*xdist;
+            predestY(i,:) = startfunc(:,2)+dist*ydist;
+        else
+            predestX(i,:) = endfunc(:,1);
+            predestY(i,:) = endfunc(:,2);
+        end
     end
     predestX = [startfunc(:,1)';predestX];
     predestY = [startfunc(:,2)';predestY];

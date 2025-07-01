@@ -43,9 +43,7 @@
 % defined points, and then add them together all back at the end... this is
 % so wack...
 
-function fullFunc = SVGReadNew(filename,points)
-    %points = 2000;
-    %filename = 'C:\Users\duck7\OneDrive\Documents\MATLAB\loadsvg_2\davidtest1.svg';
+function fullFunc = SVGReadNew(filename,points,norm)
     svg = loadsvg(filename,.01,0);
     
     % Concatenating svgs
@@ -53,11 +51,20 @@ function fullFunc = SVGReadNew(filename,points)
     for i = 1:length(svg)
         svgcomb = [svgcomb; svg{i}];
     end
-    
+    if norm
+        svgcomb = zscore(svgcomb,1);
+    end
+    svgcomb(:,2) = -svgcomb(:,2);
+
+    % I'll put this function on hold for now...
+    %pieces = breakInPieces(svgcomb); 
+
+    % I need to do this multiple times to detect if all the diffs are gone
     % Detecting breaks using zscore
+
     svgdif = diff(svgcomb,[],1);
-    normdif = zscore(svgdif,1);
-    
+    normdif = abs(zscore(svgdif,1));
+
     % breaking into pieces
     pieces = {};
     piece = [];
@@ -71,14 +78,17 @@ function fullFunc = SVGReadNew(filename,points)
         end
     end
     pieces = [pieces,{piece}]; % insert last piece
-    
+
+
+
+
     % Plotting for validation
-    % figure; 
-    % hold on;
-    % for i = 1:length(pieces)
-    %     piece = pieces{i};
-    %     plot(piece(:,1),piece(:,2));
-    % end
+    figure; 
+    hold on;
+    for i = 1:length(pieces)
+        piece = pieces{i};
+        plot(piece(:,1),piece(:,2));
+    end
     
     
     
@@ -128,5 +138,34 @@ function dists = distInt(val,pieces)
             dists(i) = dists(i) + 1;
         end
     end
+
+end
+
+function pieces = breakInPieces(svgcomb) 
+%    assert(iscell(svgcomb))
+    % Detecting breaks using zscore
+    svgdif = diff(svgcomb,[],1);
+    normdif = zscore(svgdif,1);
+    
+    % breaking into pieces
+    pieces = {};
+    piece = [];
+    logic = normdif > 3; % STD bigger than 3 should be good right?
+    logic = logic(:,1) | logic(:,2); % counts as a penbreak if there is either a jump in x OR y
+    for j = 1:length(normdif)
+        piece = [piece; svgcomb(j,:)];
+        if logic(j)
+            % Recursion... Let's see if this works...
+            % Detect if there are still penbreaks in piece
+            % Run this exact function again on it...
+            pdif = diff(piece,[],1);
+            if sum(zscore(pdif,1) > 3,"all")
+                piece = breakInPieces(piece);
+            end
+            pieces = [pieces,{piece}];
+            piece = [];
+        end
+    end
+    pieces = [pieces,{piece}]; % insert last piece
 
 end
