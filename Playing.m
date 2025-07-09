@@ -442,7 +442,7 @@ end
 x_0 = 3;
 x1_0 = 2;
 xinit = [x_0;x1_0];
-system = [0,1;-1,-3];
+system = [0,1;-4,-3];
 allpath = {};
 for j = 1:size(pointsx,2)
     for i = 1:size(pointsx,1)
@@ -473,7 +473,9 @@ ylim([-6,6])
 
 axs = reshape(axs,1,[]);
 allpath = reshape(allpath,1,[]);
+while 1
 LineDraw(axs,allpath,@InvCarv,1);
+end
 %gifwritefromFS('PhasePortraitLinearSystem.gif',axs,LineDraw2(axs,allpath,@InvCarv,1));
 
 %% Redoing this except with only looking at the projection onto x
@@ -514,7 +516,8 @@ LineDraw(axs,allpath,@InvCarv,1);
     ylim([-6,6])
     
     axs = reshape(axs,1,[]);
-    gifwritefromFS('linearPhasePortrait.gif',axs,LineDraw2(axs,pathproj,@LinCarv));
+    LineDraw(axs,pathproj,@InvCarv)
+    %gifwritefromFS('linearPhasePortrait.gif',axs,LineDraw2(axs,pathproj,@LinCarv));
 
  %% Redoing this except with a nonlinear...
     [pointsx,pointsy] = ndgrid(linspace(-5,5,10),linspace(-5,5,10));
@@ -645,10 +648,12 @@ hotdog = SVGReadNew('hotdog1.svg',2000,1);
 sandwich = SVGReadNew('sandwich.svg',2000,1);
 taco = SVGReadNew('taco.svg',2000,1);
 poptart = SVGReadNew('poptart.svg',2000,1);
-%uncrust = SVGReadNew('uncrustables.svg',2000,1);
+uncrust = SVGReadNew('uncrustables1.svg',2000,1);
 ax = Preplot(face,'-',[-4,4],[-4,4]);
 
+hold on;
 LineDraw(ax,face);
+text(0,-3,0,"Is it a sandwich?","FontSize",20,'HorizontalAlignment','center')
 while(1)
     functween(ax,hotdog);
     pause(1)
@@ -658,10 +663,14 @@ while(1)
     pause(1)
     functween(ax,poptart); 
     pause(1)
-    %functween(ax,uncrust);
-    %pause(1)
+    functween(ax,uncrust);
+    pause(1)
 end
 
+%% Hm... For some reason this didn't work...
+linny = SVGReadNew('syrup-01.svg',2000,1);
+ax = Preplot(linny,'-');
+LineDraw(ax,linny)
 
 
 % Something to solve diffeqs

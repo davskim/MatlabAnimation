@@ -73,7 +73,9 @@ function fullFunc = SVGReadNew(filename,points,norm)
     for i = 1:length(normdif)
         piece = [piece; svgcomb(i,:)];
         if logic(i)
-            pieces = [pieces,{piece}];
+            if length(piece) > 3
+                pieces = [pieces,{piece}];
+            end
             piece = [];
         end
     end
@@ -83,13 +85,13 @@ function fullFunc = SVGReadNew(filename,points,norm)
 
 
     % Plotting for validation
-    figure; 
-    hold on;
-    for i = 1:length(pieces)
-        piece = pieces{i};
-        plot(piece(:,1),piece(:,2));
-    end
-    
+    % figure; 
+    % hold on;
+    % for i = 1:length(pieces)
+    %     piece = pieces{i};
+    %     plot(piece(:,1),piece(:,2));
+    % end
+    % 
     
     
     % Interpolating within each piece
