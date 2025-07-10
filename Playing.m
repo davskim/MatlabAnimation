@@ -578,9 +578,9 @@ end
     
     allpath = reshape(allpath,1,[]);
     axs = Preplot(allpath,'-',[-5,20],[-5,20]);
-    lol = LineDraw2(axs,allpath,@LinCarv);
+    lol = LineDraw(axs,allpath,@LinCarv);
 
-    gifwritefromFS('test2.gif',axs,lol);
+   % gifwritefromFS('test2.gif',axs,lol);
 
     %% Plotting ACGs
     load('C:\Users\davskim\Downloads\Halfdanacg.mat');
@@ -599,7 +599,7 @@ end
     ylim([1,300])
     framestacks = {};
     for i = 1:10
-        framestacks{i,1} = functween2(ax,[samples{i,1}.binCenters(:), samples{i,1}.currentacg(:)]);
+        framestacks{i,1} = functween(ax,[samples{i,1}.binCenters(:), samples{i,1}.currentacg(:)]);
         pause(1);
     end
 
@@ -712,28 +712,33 @@ for i = 1:length(evecs)
 end
 
 cardax = {};
-cardax{1} = [linspace(-3,3,length(eline)); zeros(1,length(eline)); zeros(1,length(eline))];
-cardax{2} = [zeros(1,length(eline)); linspace(-3,3,length(eline)); zeros(1,length(eline))];
-cardax{3} = [zeros(1,length(eline)); zeros(1,length(eline)); linspace(-3,3,length(eline))];
+cardax{1} = [linspace(-3,3,length(eline)); zeros(1,length(eline)); zeros(1,length(eline))]';
+cardax{2} = [zeros(1,length(eline)); linspace(-3,3,length(eline)); zeros(1,length(eline))]';
+cardax{3} = [zeros(1,length(eline)); zeros(1,length(eline)); linspace(-3,3,length(eline))]';
 
 figure;
 lin = Preplot3(data,'o',[-5,10],[-5,10],[-5,10]);
 grid(true)
 
 LineDraw3(lin,data);
+pause(2)
 normdat = zscore(data,0,1);
 functween3(lin,normdat);
+pause(2)
 panCam(lin,[-3,3;-3,3;-3,3]);
+pause(2)
 
 elins = Preplot3(elines,'-');
 LineDraw3(elins,elines);
+pause(2)
 
 rotate(lin,[45,45]);
 rotate(lin,[0,45]);
 rotate(lin,[45,45]);
 
-functween3(elines,cardax);
-
+pause(2)
+functween3(elins,cardax);
+pause(2)
 
 
 

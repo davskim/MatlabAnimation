@@ -8,7 +8,7 @@
 
 % TODO: GET RID OF SAVEANI
 
-function frameSeq = LineDraw(ax,endfunc,func,autoscale,saveani)
+function frameSeq = LineDraw(ax,endfunc,func,autoscale)
     if iscell(ax) && sum(size(ax)) > 2 %checking if there are multiple axes...
         multi = true;
     else
