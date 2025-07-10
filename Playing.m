@@ -672,6 +672,41 @@ linny = SVGReadNew('syrup-01.svg',2000,1);
 ax = Preplot(linny,'-');
 LineDraw(ax,linny)
 
+%% Gotta try to go to the third dimension
+figure;
+linequestionmark = plot(eigline(1,:),eigline(2,:),eigline(3,:),'o');
+grid(true)
+xlim([-3 3])
+ylim([-3 3])
+zlim([-3 3])
+
+%%
+% Let's do some PCA stuff... I want to have a 3D cluster, and then convert
+% that bad boy into eigenvector projections on the correlation matrix
+data = readmatrix('3D_Data_with_Clusters.csv');
+
+% Norming and making correlation matrix
+normdata = zscore(data,0,1);
+cormat = normdata' * normdata;
+cormat = cormat / (length(data)-1);
+
+[evecs evals] = eig(cormat);
+
+% Creating new coordinate system based on the eigenbasis
+% Projecting on each eigenvector
+eigendata = zeros(size(data));
+for i = 1:size(evals,1)
+    for j = 1:size(data,1)
+        eigendata(j,i) = dot(evecs(:,i),data(j,:));
+    end
+end
+    
+
+figure;
+lin = Preplot3(data,'o');
+grid(true)
+
+LineDraw3(lin,data);
 
 % Something to solve diffeqs
 % This specifically only solves systems of diffeqs in R2... I'm kinda
