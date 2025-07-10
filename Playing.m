@@ -701,12 +701,46 @@ for i = 1:size(evals,1)
     end
 end
     
+elines = {};
+line = (-4:.1:4);
+eline = [];
+for i = 1:length(evecs)
+    for j = 1:length(line)
+        eline(j,:) = line(j) * evecs(:,i);
+    end
+    elines{i} = eline;
+end
+
+cardax = {};
+cardax{1} = [linspace(-3,3,length(eline)); zeros(1,length(eline)); zeros(1,length(eline))];
+cardax{2} = [zeros(1,length(eline)); linspace(-3,3,length(eline)); zeros(1,length(eline))];
+cardax{3} = [zeros(1,length(eline)); zeros(1,length(eline)); linspace(-3,3,length(eline))];
 
 figure;
-lin = Preplot3(data,'o');
+lin = Preplot3(data,'o',[-5,10],[-5,10],[-5,10]);
 grid(true)
 
 LineDraw3(lin,data);
+normdat = zscore(data,0,1);
+functween3(lin,normdat);
+panCam(lin,[-3,3;-3,3;-3,3]);
+
+elins = Preplot3(elines,'-');
+LineDraw3(elins,elines);
+
+rotate(lin,[45,45]);
+rotate(lin,[0,45]);
+rotate(lin,[45,45]);
+
+functween3(elines,cardax);
+
+
+
+
+
+
+
+
 
 % Something to solve diffeqs
 % This specifically only solves systems of diffeqs in R2... I'm kinda
