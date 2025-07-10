@@ -79,7 +79,7 @@ ylim([-3,3])
 
 while 1
     functween(ax,[x,y],[x,3*y])
-    functween(ax,[x,3*y],[x,y])
+    functween3(ax,[x,3*y],[x,y])
     functween(ax,[x,y],[x,sin(10*x)])
     functween(ax,[x,sin(10*x)],[x,1.5*sin(12*x)])
     functween(ax,[x,1.5*sin(12*x)],[x,y])
@@ -343,7 +343,7 @@ while 1
     pause(.5)
     panCam(ax,[-6,6;-6,6])
     pause(1)
-    functween(ax,[x(:),y(:)],([3,2;1,2]*[x(:),y(:)]')')
+    functween3(ax,[x(:),y(:)],([3,2;1,2]*[x(:),y(:)]')')
     pause(1)
 
 end
@@ -721,24 +721,19 @@ lin = Preplot3(data,'o',[-5,10],[-5,10],[-5,10]);
 grid(true)
 
 LineDraw3(lin,data);
-pause(2)
 normdat = zscore(data,0,1);
 functween3(lin,normdat);
-pause(2)
 panCam(lin,[-3,3;-3,3;-3,3]);
-pause(2)
 
 elins = Preplot3(elines,'-');
 LineDraw3(elins,elines);
-pause(2)
 
 rotate(lin,[45,45]);
 rotate(lin,[0,45]);
 rotate(lin,[45,45]);
-
-pause(2)
+panCam(lin,[-6,6;-6,6;-6,24])
 functween3(elins,cardax);
-pause(2)
+functween3(lin,eigendata)
 
 
 

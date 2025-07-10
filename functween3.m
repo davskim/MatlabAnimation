@@ -35,10 +35,12 @@ function framestack = functween3(ax,startfunc,endfunc)
             end
             startfunc{i} = thisstartax;
         end
-    else
+    else % not nargin ==2
         if ~multi %if it's not multiple plots, just draw the line as is...
             ax = {ax};
             endfunc = {endfunc};
+            startfunc = {startfunc};
+            threeD = size(endfunc{1},2) > 2;
         end
     end
 
@@ -92,9 +94,12 @@ function framestack = functween3(ax,startfunc,endfunc)
                 end
             end
         end
-
+        
+        if threeD
         framestack{j} = {predestX,predestY,predestZ};
-
+        else
+        framestack{j} = {predestX,predestY};
+        end
 
     end
 
@@ -107,8 +112,9 @@ function framestack = functween3(ax,startfunc,endfunc)
             subframestack = framestack{j};
             predestX = subframestack{1};
             predestY = subframestack{2};
-            predestZ = subframestack{3};
+
             if threeD
+            predestZ = subframestack{3};
             set(ax,'XData',predestX(i,:),'YData',predestY(i,:),'ZData',predestZ(i,:))
             else
             set(ax,'XData',predestX(i,:),'YData',predestY(i,:));
@@ -116,6 +122,10 @@ function framestack = functween3(ax,startfunc,endfunc)
         end
         drawnow
     end
+    if threeD
     framestack = {predestX,predestY,predestZ};
+    else
+    framestack = {predestX,predestY};
+    end
 end
 
