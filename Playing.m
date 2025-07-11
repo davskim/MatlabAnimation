@@ -718,7 +718,7 @@ cardax{3} = [zeros(1,length(eline)); zeros(1,length(eline)); linspace(-3,3,lengt
 
 figure;
 lin = Preplot3(data,'o',[-5,10],[-5,10],[-5,10]);
-grid(true)
+grid(lin.Parent,true)
 
 LineDraw3(lin,data);
 normdat = zscore(data,0,1);
@@ -731,15 +731,32 @@ LineDraw3(elins,elines);
 rotate(lin,[45,45]);
 rotate(lin,[0,45]);
 rotate(lin,[45,45]);
-panCam(lin,[-6,6;-6,6;-6,24])
+panCam(lin,[-10,10;-10,10;-1,20])
 functween3(elins,cardax);
 functween3(lin,eigendata)
+rotate(lin,[0,0])
 
 
+%% This shit probably not gonna work.
+figure;
+x = linspace(-3,3,100);
+y = sin(5*x);
+lin = Preplot([x(:),y(:)],'-',[-3,3],[-1,1]);
 
+framestack = {};
+linstack = {};
 
+framestack{1,1} = LineDraw(lin,[x(:),y(:)]);
+framestack{2,1} = functween3(lin,[x(:),0 * x(:)]);
+framestack{3,1} = functween3(lin,[x(:),3*y(:)]);
+framestack{3,2} = panCam(lin,[-3,3;-3,3]);
 
+linstack{1,1} = lin;
+linstack{2,1} = lin;
+linstack{3,1} = lin;
+linstack{3,2} = lin.Parent;
 
+gifwritefromFS('simul2.gif',linstack,framestack);
 
 
 % Something to solve diffeqs
