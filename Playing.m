@@ -759,6 +759,55 @@ linstack{3,2} = lin.Parent;
 gifwritefromFS('simul2.gif',linstack,framestack);
 
 
+%% Guess who's shitting bricks for this GSI interview?
+% me
+
+% So anyway, let's model the heart of 417... The fucking cable equation...
+%
+% dV/dt = D * d2V/dx^2 - V/T
+%
+% Let's get some constants... 
+%
+% lemda = 10 cm
+% T = 0.01 seconds
+% D = lemda^2 / T
+% 
+% This should pretty much be everything that we need right? Unfortunately,
+% I can't really use my simDEQ functions for this as these are multiple
+% different variables...
+
+dx    = 0.002;      % 0.02 cm (200 µm compartments)
+lambda= 0.2;       % 0.2 cm electrotonic length
+T   = 0.02;      % 20 ms
+D     = lambda^2 / T;          % cm²/s
+dt    = 0.4*dx^2/(2*D);     
+
+xt = zeros(3000,100);
+
+init = 10;
+xt(1,mid) = init; %5000 mV
+for j = 1:size(xt,1) - 1
+    for i = 2:size(xt,2) - 1
+        V = xt(j,:);
+        d2Vdx2 = (V(i+1) - 2*V(i) + V(i-1)) / dx^2;      % curvature at x_i (time t)
+        dVdt   = D * d2Vdx2 - V(i)/T;                   % time‐rate at x_i (time t)
+        xt(j+1,i)= V(i) + dt * dVdt;                        % Euler step → time t+dt
+    end
+end
+
+imagesc(xt)
+colormap('jet')
+
+%%
+figure;
+while 1
+    for i = 1:100
+        plot(xt(i,:));
+        ylim([0 10])
+        drawnow;
+    end
+end
+
 % Something to solve diffeqs
 % This specifically only solves systems of diffeqs in R2... I'm kinda
 % certain that it CAN in theory do solutions in Rn, but obviously you can't

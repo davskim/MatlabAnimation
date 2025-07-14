@@ -4,6 +4,7 @@
 function gifwritefromFS(filename,axs,framestack)
     started = false;
     gcf;
+    set(gcf, 'WindowState', 'maximized');
     set(gcf, 'Color', 'w');       % White figure background
     set(gca, 'Color', 'w');   
  
@@ -51,11 +52,11 @@ function gifwritefromFS(filename,axs,framestack)
             [A,map] = rgb2ind(im,256);
             if k == 1 && ~started
                 % First frame: create GIF, infinite loop
-                imwrite(A,map,filename,'gif','LoopCount',Inf,'DelayTime',0.03);
+                imwrite(A,map,filename,'gif','LoopCount',Inf,'DelayTime',0.02);
                 started = true;
             else
                 % Append subsequent frames
-                imwrite(A,map,filename,'gif','WriteMode','append','DelayTime',0.01);
+                imwrite(A,map,filename,'gif','WriteMode','append','DelayTime',0.02);
             end
 
         end
